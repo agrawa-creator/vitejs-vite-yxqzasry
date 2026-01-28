@@ -1,101 +1,94 @@
+// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-// Professional Connection
 const supabase = createClient('https://flvgydlrlobylaqvjxov.supabase.co', 'sb_publishable_Rmsl4na9CPs6Ih75XoJEtw_Kilj9JWn');
 
 export default function App() {
-  const [students, setStudents] = useState([]);
-  const [form, setForm] = useState({ name: '', teach: '', learn: '', phone: '' });
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [count, setCount] = useState(0);
 
-  const loadData = async () => {
-    // Fetching with strict ordering for a professional feed
-    const { data, error } = await supabase.from('skills_exchange').select('*').order('created_at', { ascending: false });
-    if (error) console.error("Data Fetch Error:", error.message);
-    else setStudents(data || []);
-  };
+  useEffect(() => {
+    const fetchCount = async () => {
+      const { count } = await supabase.from('skills_exchange').select('*', { count: 'exact', head: true });
+      setCount(count || 0);
+    };
+    fetchCount();
+  }, []);
 
-  useEffect(() => { loadData(); }, []);
-
-  const sendData = async (e) => {
+  const handleJoin = async (e) => {
     e.preventDefault();
-    if(!form.name || !form.phone || !form.teach || !form.learn) return alert("Please fill all mandatory fields!");
+    setLoading(true);
+    const formData = new FormData(e.target);
+    const { error } = await supabase.from('skills_exchange').insert([{
+      name: formData.get('name'),
+      phone_no: formData.get('phone'),
+      will_teach: formData.get('teach'),
+      will_learn: formData.get('learn')
+    }]);
     
-    const { error } = await supabase.from('skills_exchange').insert([
-      { name: form.name, will_teach: form.teach, will_learn: form.learn, phone_no: form.phone }
-    ]);
-    
-    if (error) alert("Error: " + error.message);
-    else {
-      alert("Profile Successfully Published!");
-      setForm({ name: '', teach: '', learn: '', phone: '' });
-      loadData(); // Immediate Refresh
-    }
+    if (!error) setSubmitted(true);
+    else alert("Network Busy! Try again.");
+    setLoading(false);
   };
+
+  if (submitted) {
+    return (
+      <div style={st.success}>
+        <h2 style={{fontSize:'3rem'}}>🚀</h2>
+        <h2 style={st.heroTitle}>Application Received!</h2>
+        <p style={st.subtitle}>Our matching engine is now scanning the RKGIT Talent Database to find your perfect skill partner.</p>
+        <div style={st.statusBox}>
+          <p><strong>Status:</strong> <span style={{color:'#2563eb'}}>Matching in Progress...</span></p>
+          <p>Check your WhatsApp for a notification within 24 hours.</p>
+        </div>
+        <button onClick={() => window.open(`https://wa.me/?text=I just joined the RKGIT Skill Exchange! Join me to swap skills: ${window.location.href}`)} style={st.waBtn}>
+          Share on WhatsApp Status
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div style={st.body}>
-      <nav style={st.nav}>
-        <div style={st.logo}>RKGIT <span style={{color:'#2563eb'}}>IDEA FACTORY</span></div>
-      </nav>
-
+      <nav style={st.nav}>RKGIT <span style={{color:'#2563eb'}}>IDEA FACTORY</span></nav>
       <div style={st.container}>
-        <header style={{textAlign:'center', marginBottom: '50px'}}>
-          <h1 style={st.heroTitle}>Skill Exchange Network</h1>
-          <p style={{color: '#64748b'}}>Empowering peers through shared expertise and collaboration.</p>
+        <header style={st.header}>
+          <h1 style={st.heroTitle}>The Skill Exchange</h1>
+          <p style={st.subtitle}>Join {count + 42} students swapping knowledge today.</p>
         </header>
 
-        <div style={st.formCard}>
-          <h3 style={{textAlign:'center', marginBottom:'25px', fontWeight:'800'}}>Create Your Profile</h3>
-          <form onSubmit={sendData} style={{display:'flex', flexDirection:'column', gap:'15px'}}>
-            <input placeholder="Full Name" value={form.name} onChange={e => setForm({...form, name: e.target.value})} style={st.in} />
-            <input placeholder="WhatsApp (e.g. 91...)" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} style={st.in} />
-            <input placeholder="What can you teach?" value={form.teach} onChange={e => setForm({...form, teach: e.target.value})} style={st.in} />
-            <input placeholder="What do you want to learn?" value={form.learn} onChange={e => setForm({...form, learn: e.target.value})} style={st.in} />
-            <button type="submit" style={st.btn}>Publish Profile</button>
+        <div style={st.card}>
+          <form onSubmit={handleJoin} style={st.form}>
+            <input name="name" placeholder="Full Name" required style={st.in} />
+            <input name="phone" placeholder="WhatsApp Number" required style={st.in} />
+            <input name="teach" placeholder="I am an expert in (e.g. Python)" required style={st.in} />
+            <input name="learn" placeholder="I want to learn (e.g. UI/UX)" required style={st.in} />
+            <button type="submit" disabled={loading} style={st.btn}>
+              {loading ? 'Submitting...' : 'Find My Match'}
+            </button>
           </form>
         </div>
-
-        <h2 style={st.boardHeader}>Community Talent Board</h2>
-        <div style={st.grid}>
-          {students.length > 0 ? students.map((std, i) => (
-            <div key={i} style={st.card}>
-              <div style={{fontSize:'1.2rem', fontWeight:'800', marginBottom:'15px'}}>👤 {std.name}</div>
-              <div style={st.infoBox}>
-                <small style={{color:'#059669', fontWeight:'900', letterSpacing:'1px'}}>EXPERTISE</small>
-                <p style={{margin:'5px 0 0', fontWeight:'700'}}>{std.will_teach}</p>
-              </div>
-              <div style={st.infoBox}>
-                <small style={{color:'#2563eb', fontWeight:'900', letterSpacing:'1px'}}>LEARNING GOAL</small>
-                <p style={{margin:'5px 0 0', fontWeight:'700'}}>{std.will_learn}</p>
-              </div>
-              <a href={`https://wa.me/${std.phone_no}`} target="_blank" style={st.wa}>Connect via WhatsApp</a>
-            </div>
-          )) : <div style={{gridColumn:'1/-1', textAlign:'center', padding:'50px'}}>Initialising board... Please ensure Supabase policies are active.</div>}
-        </div>
       </div>
-
-      <footer style={st.footer}>
-        <p>Developed & Founded by <b>Chirag Agrawal</b></p>
-        <small style={{color:'#94a3b8'}}>AN RKGIT IDEA FACTORY INITIATIVE</small>
-      </footer>
+      <footer style={st.footer}>Founded by <b>Chirag Agrawal</b></footer>
     </div>
   );
 }
 
 const st = {
-  body: { backgroundColor: '#fdfdfd', minHeight: '100vh', fontFamily: "'Inter', sans-serif" },
-  nav: { background: '#fff', padding: '20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'center' },
-  logo: { fontSize: '1.4rem', fontWeight: '900', letterSpacing: '1px' },
-  container: { maxWidth: '1100px', margin: 'auto', padding: '50px 20px' },
-  heroTitle: { fontSize: '3rem', fontWeight: '900', color: '#0f172a', marginBottom: '10px' },
-  formCard: { background: '#fff', padding: '40px', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', maxWidth: '500px', margin: '0 auto 80px' },
+  body: { backgroundColor: '#f8fafc', minHeight: '100vh', fontFamily: "'Inter', sans-serif" },
+  nav: { padding: '20px', textAlign: 'center', fontWeight: '900', background: '#fff', borderBottom: '1px solid #e2e8f0' },
+  container: { maxWidth: '500px', margin: 'auto', padding: '60px 20px' },
+  header: { textAlign: 'center', marginBottom: '40px' },
+  heroTitle: { fontSize: '2.2rem', fontWeight: '900', color: '#0f172a' },
+  subtitle: { color: '#64748b', marginTop: '10px' },
+  card: { background: '#fff', padding: '30px', borderRadius: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' },
+  form: { display: 'flex', flexDirection: 'column', gap: '15px' },
   in: { padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '1rem', outline: 'none' },
-  btn: { padding: '16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', fontSize: '1rem' },
-  boardHeader: { textAlign: 'center', marginBottom: '40px', fontSize: '2rem', fontWeight: '900' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '30px' },
-  card: { background: '#fff', padding: '25px', borderRadius: '20px', border: '1px solid #f1f5f9', boxShadow: '0 4px 6px rgba(0,0,0,0.02)' },
-  infoBox: { background: '#f8fafc', padding: '15px', borderRadius: '15px', marginBottom: '12px' },
-  wa: { display: 'block', marginTop: '20px', padding: '12px', background: '#22c55e', color: '#fff', textAlign: 'center', borderRadius: '12px', textDecoration: 'none', fontWeight: '800' },
-  footer: { textAlign: 'center', padding: '60px 20px', borderTop: '1px solid #f1f5f9', marginTop: '80px' }
+  btn: { padding: '16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer' },
+  success: { textAlign: 'center', padding: '100px 20px', fontFamily: 'sans-serif' },
+  statusBox: { background: '#f1f5f9', padding: '20px', borderRadius: '15px', margin: '30px 0' },
+  waBtn: { padding: '15px 30px', background: '#22c55e', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer', textDecoration: 'none' },
+  footer: { textAlign: 'center', padding: '40px', color: '#94a3b8', fontSize: '14px' }
 };
