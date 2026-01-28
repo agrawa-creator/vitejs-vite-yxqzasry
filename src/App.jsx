@@ -14,20 +14,10 @@ export default function App() {
 
   const SECRET_PIN = "987363"; 
 
-  // --- LIVE DATA FETCH FUNCTION ---
   const fetchLiveNetwork = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('skills_exchange')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error("Fetch Error:", error.message);
-      alert("Database Error: " + error.message);
-    } else {
-      setStudents(data || []);
-    }
+    const { data, error } = await supabase.from('skills_exchange').select('*');
+    if (!error) setStudents(data || []);
     setLoading(false);
   };
 
@@ -39,14 +29,14 @@ export default function App() {
       name: fd.get('name'), phone_no: fd.get('phone'), will_teach: fd.get('teach'), will_learn: fd.get('learn')
     }]);
     if (!error) setSubmitted(true);
-    else alert("Registration Error! Check Supabase connection.");
+    else alert("Database Error! Check your connection.");
     setLoading(false);
   };
 
   const handleAdminLogin = () => {
     if (pin === SECRET_PIN) {
       setIsAdminAuth(true);
-      fetchLiveNetwork(); // PIN sahi hote hi data load hoga
+      fetchLiveNetwork();
     } else {
       alert("Invalid Founder PIN!");
     }
@@ -55,10 +45,9 @@ export default function App() {
   if (submitted) return (
     <div style={st.centerLayout}>
       <div style={st.successCard}>
-        <h1 style={{fontSize:'4rem', margin:0}}>✅</h1>
-        <h2 style={{color: '#0f172a', fontWeight: '900'}}>Registration Success!</h2>
-        <p style={{color: '#475569'}}>RKGIT Idea Factory is finding your partner. Check WhatsApp soon.</p>
-        <button onClick={() => setSubmitted(false)} style={st.primaryBtn}>Add Another Profile</button>
+        <h2 style={st.heroTitle}>Success! ✅</h2>
+        <p style={st.subtitle}>RKGIT Idea Factory is finding your partner. Check WhatsApp soon.</p>
+        <button onClick={() => setSubmitted(false)} style={st.primaryBtn}>Add Another</button>
       </div>
     </div>
   );
@@ -66,11 +55,11 @@ export default function App() {
   if (view === 'admin') {
     return (
       <div style={st.body}>
-        <nav style={st.nav}>FOUNDER'S COMMAND CENTER</nav>
+        <nav style={st.nav}>FOUNDER'S DASHBOARD</nav>
         {!isAdminAuth ? (
           <div style={st.centerLayout}>
             <div style={st.loginCard}>
-              <h3 style={{color: '#1e293b'}}>Verify Identity</h3>
+              <h3 style={st.charcoalText}>Verify Identity</h3>
               <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} style={st.input} placeholder="Founder PIN" />
               <button onClick={handleAdminLogin} style={st.primaryBtn}>Unlock Console</button>
               <p onClick={() => setView('user')} style={st.backLink}>← Back to Home</p>
@@ -79,25 +68,17 @@ export default function App() {
         ) : (
           <div style={st.adminContainer}>
             <div style={st.adminHeader}>
-               <div>
-                 <h2 style={{color: '#0f172a', margin:0}}>Live Network Intelligence</h2>
-                 <p style={{color:'#2563eb', fontWeight:'bold'}}>Active Registrations: {students.length}</p>
-               </div>
-               <div style={{display:'flex', gap:'10px'}}>
-                 <button onClick={fetchLiveNetwork} style={st.refreshBtn}>{loading ? 'Syncing...' : 'Refresh Data'}</button>
-                 <button onClick={() => {setIsAdminAuth(false); setView('user');}} style={st.logoutBtn}>Lock</button>
-               </div>
+               <div><h2 style={st.charcoalText}>Live Network</h2><p style={st.blueBold}>Total: {students.length}</p></div>
+               <button onClick={() => {setIsAdminAuth(false); setView('user');}} style={st.logoutBtn}>Lock</button>
             </div>
             <div style={st.grid}>
-              {students.length === 0 && !loading ? <p style={{color:'#64748b', gridColumn:'1/-1', textAlign:'center'}}>No data found. Check Supabase RLS Policies.</p> : 
-                students.map((s, i) => (
+              {students.map((s, i) => (
                 <div key={i} style={st.dataCard}>
-                  <div style={st.cardBadge}>MEMBER #{i+1}</div>
-                  <h3 style={{color: '#1e293b', margin:'10px 0'}}>👤 {s.name}</h3>
-                  <div style={st.infoRow}><b style={{color: '#2563eb'}}>TEACH:</b> <span style={{color:'#334155'}}>{s.will_teach}</span></div>
-                  <div style={st.infoRow}><b style={{color: '#059669'}}>LEARN:</b> <span style={{color:'#334155'}}>{s.will_learn}</span></div>
-                  <div style={st.infoRow}><b style={{color: '#64748b'}}>CONTACT:</b> <span style={{color:'#334155'}}>{s.phone_no}</span></div>
-                  <a href={`https://wa.me/${s.phone_no}`} target="_blank" style={st.connectLink}>Match via WhatsApp</a>
+                  <h3 style={st.charcoalText}>👤 {s.name}</h3>
+                  <div style={st.infoRow}><b style={st.blueText}>TEACH:</b> {s.will_teach}</div>
+                  <div style={st.infoRow}><b style={{color: '#059669'}}>LEARN:</b> {s.will_learn}</div>
+                  <div style={st.infoRow}><b style={{color: '#64748b'}}>WA:</b> {s.phone_no}</div>
+                  <a href={`https://wa.me/${s.phone_no}`} target="_blank" style={st.connectLink}>Message</a>
                 </div>
               ))}
             </div>
@@ -109,27 +90,34 @@ export default function App() {
 
   return (
     <div style={st.body}>
-      <nav style={st.nav} onDoubleClick={() => setView('admin')}>
-        RKGIT <span style={{color: '#2563eb'}}>IDEA FACTORY</span>
+      <style>{`
+        @media (max-width: 600px) {
+          .hero-title { font-size: 2rem !important; }
+          .form-card { padding: 25px !important; margin-top: 20px !important; }
+          .nav-text { font-size: 1.1rem !important; }
+        }
+      `}</style>
+      <nav style={st.nav} className="nav-text" onDoubleClick={() => setView('admin')}>
+        RKGIT <span style={st.blueText}>IDEA FACTORY</span>
       </nav>
       <div style={st.container}>
-        <header style={{textAlign:'center', marginBottom:'40px'}}>
+        <header style={{textAlign:'center', marginBottom:'30px'}}>
           <div style={st.pill}>SKILL EXCHANGE v2.0</div>
-          <h1 style={{fontSize: '3.2rem', fontWeight: '900', color: '#0f172a', letterSpacing: '-2px'}}>Master New Skills</h1>
-          <p style={{color: '#475569', fontSize: '1.2rem'}}>Premium peer mentorship for RKGIT students.</p>
+          <h1 className="hero-title" style={st.heroTitle}>Master New Skills</h1>
+          <p style={st.subtitle}>Premium peer mentorship for RKGIT students.</p>
         </header>
         <div style={st.formWrapper}>
-          <form onSubmit={handleJoin} style={st.glassForm}>
+          <form onSubmit={handleJoin} className="form-card" style={st.glassForm}>
             <div style={st.inputGroup}><label style={st.label}>Full Name</label><input name="name" placeholder="Chirag Agrawal" required style={st.input} /></div>
-            <div style={st.inputGroup}><label style={st.label}>WhatsApp Identity</label><input name="phone" placeholder="91XXXXXXXXXX" required style={st.input} /></div>
-            <div style={st.inputGroup}><label style={st.label}>Expertise (To Teach)</label><input name="teach" placeholder="e.g. Java, Python" required style={st.input} /></div>
-            <div style={st.inputGroup}><label style={st.label}>Target Skill (To Learn)</label><input name="learn" placeholder="e.g. UI/UX, AI" required style={st.input} /></div>
+            <div style={st.inputGroup}><label style={st.label}>WhatsApp Number</label><input name="phone" placeholder="91XXXXXXXXXX" required style={st.input} /></div>
+            <div style={st.inputGroup}><label style={st.label}>Your Expertise</label><input name="teach" placeholder="e.g. Java, Python" required style={st.input} /></div>
+            <div style={st.inputGroup}><label style={st.label}>Seeking Skill</label><input name="learn" placeholder="e.g. UI/UX, AI" required style={st.input} /></div>
             <button type="submit" style={st.primaryBtn}>{loading ? 'Syncing...' : 'Find My Match'}</button>
           </form>
         </div>
       </div>
       <footer style={st.footer}>
-        <p style={{color:'#64748b'}}>Curated by <b style={{color:'#1e293b'}}>Chirag Agrawal</b> | <span onClick={() => setView('admin')} style={{cursor:'pointer', fontWeight:'bold'}}>Admin Console</span></p>
+        <p>Curated by <b style={st.charcoalText}>Chirag Agrawal</b> | <span onClick={() => setView('admin')} style={{cursor:'pointer', fontWeight:'bold'}}>Admin</span></p>
       </footer>
     </div>
   );
@@ -137,27 +125,30 @@ export default function App() {
 
 const st = {
   body: { backgroundColor: '#fcfdfe', minHeight: '100vh', fontFamily: "sans-serif" },
-  nav: { padding: '25px', background: '#fff', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '900', fontSize:'1.4rem', color: '#0f172a' },
-  container: { maxWidth: '1200px', margin: 'auto', padding: '60px 20px' },
-  pill: { background: '#eff6ff', color: '#2563eb', padding: '8px 18px', borderRadius: '50px', fontSize: '12px', fontWeight: '900', display: 'inline-block', marginBottom: '20px', border:'1px solid #dbeafe' },
+  nav: { padding: '20px', background: '#fff', borderBottom: '1px solid #e2e8f0', textAlign: 'center', fontWeight: '900', fontSize:'1.3rem', color: '#0f172a' },
+  container: { maxWidth: '1200px', margin: 'auto', padding: '40px 20px' },
+  pill: { background: '#eff6ff', color: '#2563eb', padding: '6px 15px', borderRadius: '50px', fontSize: '11px', fontWeight: '900', display: 'inline-block', marginBottom: '15px', border:'1px solid #dbeafe' },
+  heroTitle: { fontSize: '3.2rem', fontWeight: '900', color: '#0f172a', letterSpacing: '-1.5px', margin: 0 },
+  subtitle: { color: '#475569', fontSize: '1.1rem', marginTop: '10px' },
   formWrapper: { display: 'flex', justifyContent: 'center' },
-  glassForm: { background: '#fff', padding: '45px', borderRadius: '35px', boxShadow: '0 30px 60px -12px rgba(0,0,0,0.1)', width: '100%', maxWidth: '500px', display:'flex', flexDirection:'column', gap:'5px', border: '1px solid #f1f5f9' },
-  inputGroup: { display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '15px' },
-  label: { fontSize: '13px', fontWeight: '800', color: '#334155' },
-  input: { padding: '16px', borderRadius: '15px', border: '1px solid #e2e8f0', fontSize: '1rem', color: '#0f172a', outline: 'none', backgroundColor: '#f8fafc' },
-  primaryBtn: { padding: '18px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: '900', cursor: 'pointer', fontSize: '1rem', marginTop: '10px' },
-  centerLayout: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', textAlign: 'center' },
-  successCard: { background: '#fff', padding: '60px', borderRadius: '40px', maxWidth: '450px', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' },
-  loginCard: { background: '#fff', padding: '45px', borderRadius: '35px', border: '1px solid #e2e8f0', width: '340px', display:'flex', flexDirection:'column', gap:'15px' },
-  adminContainer: { maxWidth: '1200px', margin: 'auto', padding: '40px 20px' },
-  adminHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '2px solid #f1f5f9', paddingBottom:'20px' },
-  refreshBtn: { padding: '10px 20px', background: '#f8fafc', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '12px', fontWeight: '800', cursor: 'pointer' },
-  logoutBtn: { padding: '10px 22px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '25px' },
-  dataCard: { background: '#fff', padding: '30px', borderRadius: '25px', border: '1px solid #f1f5f9', boxShadow: '0 10px 15px rgba(0,0,0,0.02)' },
-  cardBadge: { fontSize: '10px', fontWeight: '900', color: '#94a3b8', letterSpacing: '1px' },
-  infoRow: { marginBottom: '10px', fontSize: '15px', color: '#334155' },
-  connectLink: { display: 'block', marginTop: '20px', padding: '14px', background: '#22c55e', color: '#fff', textAlign: 'center', borderRadius: '15px', textDecoration: 'none', fontWeight: '900' },
-  footer: { textAlign: 'center', padding: '60px 20px' },
+  glassForm: { background: '#fff', padding: '45px', borderRadius: '30px', boxShadow: '0 20px 40px rgba(0,0,0,0.06)', width: '100%', maxWidth: '480px', display:'flex', flexDirection:'column', gap:'5px', border: '1px solid #f1f5f9' },
+  inputGroup: { display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '12px' },
+  label: { fontSize: '12px', fontWeight: '800', color: '#334155' },
+  input: { padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '1rem', color: '#0f172a', outline: 'none', backgroundColor: '#f8fafc' },
+  primaryBtn: { padding: '16px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: '900', cursor: 'pointer', fontSize: '1rem', marginTop: '10px' },
+  charcoalText: { color: '#0f172a' },
+  blueText: { color: '#2563eb' },
+  blueBold: { color: '#2563eb', fontWeight: 'bold' },
+  centerLayout: { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', textAlign: 'center', padding: '20px' },
+  successCard: { background: '#fff', padding: '40px', borderRadius: '30px', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', maxWidth: '400px' },
+  loginCard: { background: '#fff', padding: '35px', borderRadius: '25px', border: '1px solid #e2e8f0', width: '300px', display:'flex', flexDirection:'column', gap:'15px' },
+  adminContainer: { maxWidth: '1200px', margin: 'auto', padding: '30px 20px' },
+  adminHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' },
+  logoutBtn: { padding: '10px 18px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '10px', fontWeight: '800' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' },
+  dataCard: { background: '#fff', padding: '25px', borderRadius: '20px', border: '1px solid #f1f5f9' },
+  infoRow: { marginBottom: '8px', fontSize: '14px', color: '#334155' },
+  connectLink: { display: 'block', marginTop: '15px', padding: '12px', background: '#22c55e', color: '#fff', textAlign: 'center', borderRadius: '10px', textDecoration: 'none', fontWeight: '900' },
+  footer: { textAlign: 'center', padding: '40px 20px', color: '#94a3b8', fontSize: '13px' },
   backLink: { fontWeight: '700', color: '#2563eb', cursor: 'pointer', marginTop: '10px' }
 };
