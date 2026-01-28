@@ -14,14 +14,19 @@ export default function App() {
 
   const SECRET_PIN = "987363"; 
 
-  // DATA FETCH LOGIC - Jo live network dikhayega
-  const loadData = async () => {
+  // --- LIVE DATA FETCH FUNCTION ---
+  const fetchLiveNetwork = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from('skills_exchange').select('*').order('created_at', { ascending: false });
-    if (!error) {
-      setStudents(data || []);
+    const { data, error } = await supabase
+      .from('skills_exchange')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error("Fetch Error:", error.message);
+      alert("Database Error: " + error.message);
     } else {
-      console.error("Error fetching data:", error);
+      setStudents(data || []);
     }
     setLoading(false);
   };
@@ -34,14 +39,14 @@ export default function App() {
       name: fd.get('name'), phone_no: fd.get('phone'), will_teach: fd.get('teach'), will_learn: fd.get('learn')
     }]);
     if (!error) setSubmitted(true);
-    else alert("Database Error! Check Supabase Policies.");
+    else alert("Registration Error! Check Supabase connection.");
     setLoading(false);
   };
 
   const handleAdminLogin = () => {
     if (pin === SECRET_PIN) {
       setIsAdminAuth(true);
-      loadData();
+      fetchLiveNetwork(); // PIN sahi hote hi data load hoga
     } else {
       alert("Invalid Founder PIN!");
     }
@@ -76,12 +81,15 @@ export default function App() {
             <div style={st.adminHeader}>
                <div>
                  <h2 style={{color: '#0f172a', margin:0}}>Live Network Intelligence</h2>
-                 <p style={{color:'#2563eb', fontWeight:'bold'}}>Total Registrations: {students.length}</p>
+                 <p style={{color:'#2563eb', fontWeight:'bold'}}>Active Registrations: {students.length}</p>
                </div>
-               <button onClick={() => {setIsAdminAuth(false); setView('user');}} style={st.logoutBtn}>Lock Console</button>
+               <div style={{display:'flex', gap:'10px'}}>
+                 <button onClick={fetchLiveNetwork} style={st.refreshBtn}>{loading ? 'Syncing...' : 'Refresh Data'}</button>
+                 <button onClick={() => {setIsAdminAuth(false); setView('user');}} style={st.logoutBtn}>Lock</button>
+               </div>
             </div>
             <div style={st.grid}>
-              {students.length === 0 ? <p style={{color:'#64748b'}}>No data found in database.</p> : 
+              {students.length === 0 && !loading ? <p style={{color:'#64748b', gridColumn:'1/-1', textAlign:'center'}}>No data found. Check Supabase RLS Policies.</p> : 
                 students.map((s, i) => (
                 <div key={i} style={st.dataCard}>
                   <div style={st.cardBadge}>MEMBER #{i+1}</div>
@@ -143,6 +151,7 @@ const st = {
   loginCard: { background: '#fff', padding: '45px', borderRadius: '35px', border: '1px solid #e2e8f0', width: '340px', display:'flex', flexDirection:'column', gap:'15px' },
   adminContainer: { maxWidth: '1200px', margin: 'auto', padding: '40px 20px' },
   adminHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '2px solid #f1f5f9', paddingBottom:'20px' },
+  refreshBtn: { padding: '10px 20px', background: '#f8fafc', color: '#1e293b', border: '1px solid #e2e8f0', borderRadius: '12px', fontWeight: '800', cursor: 'pointer' },
   logoutBtn: { padding: '10px 22px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '12px', fontWeight: '800', cursor: 'pointer' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '25px' },
   dataCard: { background: '#fff', padding: '30px', borderRadius: '25px', border: '1px solid #f1f5f9', boxShadow: '0 10px 15px rgba(0,0,0,0.02)' },
